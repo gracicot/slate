@@ -123,6 +123,9 @@ function AndroidPlugin({ editor }) {
     onCompositionStart,
     onRender,
     onSelect,
+    queries: {
+      hasPendingCompositionDiff: () => observer.hasPendingCompositionDiff(),
+    },
   }
 }
 

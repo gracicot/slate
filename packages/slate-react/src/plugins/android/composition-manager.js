@@ -640,6 +640,9 @@ function CompositionManager(editor) {
     onCompositionStart,
     onCompositionEnd,
     onSelect,
+    hasPendingCompositionDiff: () => {
+      return last.diff != null
+    },
   }
 }
 

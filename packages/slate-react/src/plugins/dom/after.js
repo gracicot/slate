@@ -27,6 +27,7 @@ const debug = Debug('slate:after')
 function AfterPlugin(options = {}) {
   let isDraggingInternally = null
   let isMouseDown = false
+  let isComposing = false
 
   /**
    * On before input.
@@ -666,6 +667,36 @@ function AfterPlugin(options = {}) {
   }
 
   /**
+   * On composition start.
+   *
+   * @param {Event} event
+   * @param {Editor} editor
+   * @param {Function} next
+   */
+
+  function onCompositionStart(event, editor, next) {
+    debug('onCompositionStart', { event })
+    isComposing = true
+
+    next()
+  }
+
+  /**
+   * On composition start.
+   *
+   * @param {Event} event
+   * @param {Editor} editor
+   * @param {Function} next
+   */
+
+  function onCompositionEnd(event, editor, next) {
+    debug('onCompositionEnd', { event })
+    isComposing = false
+
+    next()
+  }
+
+  /**
    * Return the plugin.
    *
    * @type {Object}
@@ -687,6 +718,11 @@ function AfterPlugin(options = {}) {
     onMouseUp,
     onPaste,
     onSelect,
+    onCompositionStart,
+    onCompositionEnd,
+    queries: {
+      hasPendingCompositionDiff: () => isComposing,
+    },
   }
 }
 
