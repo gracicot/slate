@@ -393,7 +393,7 @@ function CompositionManager(editor) {
     const matchCharacterDataParent = () => {
       if (
         firstMutation.target.parentNode &&
-        firstMutation.target.parentNode.closest(`[data-key]`)
+        firstMutation.target.parentNode.closest(`[data-slate-editor]`)
       ) {
         return firstMutation.target.parentNode
       } else {
@@ -418,7 +418,11 @@ function CompositionManager(editor) {
     }
 
     if (firstMutation.type === 'characterData') {
-      resolveDOMNode(matchCharacterDataParent())
+      const parent = matchCharacterDataParent()
+
+      if (parent) {
+        resolveDOMNode(matchCharacterDataParent())
+      }
     } else if (firstMutation.type === 'childList') {
       if (firstMutation.removedNodes.length > 0) {
         if (filterBr().length === 1) {
