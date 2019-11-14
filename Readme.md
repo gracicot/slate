@@ -6,11 +6,15 @@ Some of those changes may trigger some regressions and we are aware. This is why
 
 If waiting for the pull requests to be merged is not for you, please try the `druide-slate-react` package!
 
-To stay in sync with the Slate version number, we use rc numbers. The latest version is `0.22.9-rc.3`.
+To stay in sync with the Slate version number, we use rc numbers. The latest version is `0.22.9-rc.5`.
 
 Other changes not included in a pull request yet:
 
  - Added a query to check if a composition has pending changes not committed to Slate's value ([fa59febd](https://github.com/DruideInformatiqueInc/slate/commit/fa59febd78e5d433ee586807a9ed8b25a5895314))
+
+Changes from unrelated pull requests:
+
+ - Fix composition editing in Safari #3040
 
 ----
 
