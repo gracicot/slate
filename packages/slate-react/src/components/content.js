@@ -9,6 +9,7 @@ import { List } from 'immutable'
 import {
   IS_ANDROID,
   IS_FIREFOX,
+  IS_SAFARI,
   HAS_INPUT_EVENTS_LEVEL_2,
 } from 'slate-dev-environment'
 import Hotkeys from 'slate-hotkeys'
@@ -454,7 +455,10 @@ class Content extends React.Component {
     // at the end of a block. The selection ends up to the left of the inserted
     // character instead of to the right. This behavior continues even if
     // you enter more than one character. (2019/01/03)
-    if (!IS_ANDROID && handler === 'onSelect') {
+    //
+    // SAFARI: When composing, the updateSelection causes a premature
+    // onCompositionEnd to fire. (2019/09/28)
+    if (!IS_ANDROID && !IS_SAFARI && handler === 'onSelect') {
       const { editor } = this.props
       const { value } = editor
       const { selection } = value
