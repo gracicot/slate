@@ -44,11 +44,11 @@ Except for `processSelect` which doesn't use mutations, the other process functi
 
 We only use the virtual DOM to see the state at a particular point in time.
 
-## dom-simulator
+### dom-simulator
 
 That file contains every function needed to create a virtual structure from the DOM and also every function used to rewind mutations in that virtual DOM.
 
-## Tests and replay-dom
+### Tests and replay-dom
 
 These two go together. The tests work in two ways: By constructing objects that mocks mutation records and by manually doing mutations in jsdom with a mutation observer attached to it.
 
