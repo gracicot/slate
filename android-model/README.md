@@ -4,7 +4,7 @@ This project is a proof of concept for a new way to listen for mutation observer
 
 ## Implementation Status
 
-This has not been integrated in Slate as a plugin yet. This is a proof of concept and many use cases are not supported yet or just crashes.
+This has not been integrated in Slate as a plugin. This is a proof of concept and some use cases are not supported or just crashes.
 
 Right now, there are two editors in the page: A native, vanilla content editable and a Slate editor. Since the integration into Slate hasn't been done yet, we only care about generating the right commands to the Slate Editor.
 
