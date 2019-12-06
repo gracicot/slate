@@ -72,7 +72,7 @@ export function simulateDOMNode(node) {
 	return root;
 }
 
-function removeSimulatedNode(simulatedNode, removed) {
+function removeSimulatedNode(removed) {
 	if (removed.previousSibling) {
 		removed.previousSibling.nextSibling = removed.nextSibling;
 	}
@@ -81,10 +81,15 @@ function removeSimulatedNode(simulatedNode, removed) {
 		removed.nextSibling.previousSibling = removed.previousSibling;
 	}
 
-	const index = simulatedNode.childNodes.indexOf(removed);
+	const parentNode = removed.parentNode;
+	
+	removed.nextSibling = null;
+	removed.parentNode = null;
 
+	const index = parentNode.childNodes.indexOf(removed);
+	
 	if (index !== -1) {
-		simulatedNode.childNodes.splice(index, 1);
+		parentNode.childNodes.splice(index, 1);
 	}
 }
 
@@ -129,11 +134,11 @@ export function findSimulatedNodeRecursively(search, simulatedNode) {
 	return null;
 }
 
-function reverseMutation(simulatedNode, mutation) {
+function reverseMutation(simulatedNode, mutation, detached) {
 	if (mutation.target !== simulatedNode.realNode) {
 		for (let j = 0; j < simulatedNode.childNodes.length; ++j) {
 			const child = simulatedNode.childNodes[j];
-			const newChild = reverseMutation(child, mutation);
+			const newChild = reverseMutation(child, mutation, detached);
 
 			if (newChild !== null) {
 				simulatedNode.childNodes[j] = newChild;
@@ -144,12 +149,16 @@ function reverseMutation(simulatedNode, mutation) {
 	} else {
 		if (mutation.type === 'childList') {
 			for (const added of mutation.addedNodes) {
-				const currentNode = findSimulatedNode(added, simulatedNode.childNodes);
-				removeSimulatedNode(simulatedNode, currentNode);
+				const simulatedAdded = findSimulatedNode(added, simulatedNode.childNodes);
+				detached.push(simulatedAdded);
+				removeSimulatedNode(simulatedAdded, detached);
 			}
 
 			for (const removed of mutation.removedNodes) {
-				insertSimulatedNodeAfter(simulatedNode, simulateDOMNode(removed), mutation.previousSibling);
+				const foundDetached = detached.findIndex(node => node.realNode === removed);
+				const simulatedRemoved = foundDetached !== -1 ? detached[foundDetached] : simulateDOMNode(removed);
+				detached.splice(simulatedRemoved, 1);
+				insertSimulatedNodeAfter(simulatedNode, simulatedRemoved, mutation.previousSibling);
 			}
 		} else if (mutation.type === 'characterData') {
 			simulatedNode.textContent = mutation.oldValue;
@@ -159,9 +168,11 @@ function reverseMutation(simulatedNode, mutation) {
 }
 
 function reverseMutations(simulatedNode, mutations) {
+	const detached = [];
+
 	for (let i = mutations.length - 1; i >= 0; --i) {
 		const mutation = mutations[i];
-		reverseMutation(simulatedNode, mutation);
+		reverseMutation(simulatedNode, mutation, detached);
 	}
 	return simulatedNode;
 }
