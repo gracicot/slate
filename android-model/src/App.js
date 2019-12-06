@@ -231,17 +231,19 @@ function TextEditorPanel() {
 				<h3>Slate Editor</h3>
 				<SlateEditor ref={editor} applySlateValue={useCallback(setSlate => applySlate.current = setSlate, [])}/>
 			</div>
-			<div className="document-selector">
-				<h3>Prerendered Documents</h3>
-				<div className="documents">
-					<span data-document-index="0" onClick={applyDocument}>1</span>
-					<span data-document-index="1" onClick={applyDocument}>2</span>
-					<span data-document-index="2" onClick={applyDocument}>3</span>
-					<span data-document-index="3" onClick={applyDocument}>4</span>
-					<span data-document-index="4" onClick={applyDocument}>5</span>
-					<span data-document-index="5" onClick={applyDocument}>6</span>
-					<span data-document-index="6" onClick={applyDocument}>7</span>
-					<span data-document-index="7" onClick={applyDocument}>8</span>
+			<div className="parent">
+				<h3>Pre-Rendered Documents</h3>
+				<div className="document-selector">
+					<div className="documents">
+						<span data-document-index="0" onClick={applyDocument}>1</span>
+						<span data-document-index="1" onClick={applyDocument}>2</span>
+						<span data-document-index="2" onClick={applyDocument}>3</span>
+						<span data-document-index="3" onClick={applyDocument}>4</span>
+						<span data-document-index="4" onClick={applyDocument}>5</span>
+						<span data-document-index="5" onClick={applyDocument}>6</span>
+						<span data-document-index="6" onClick={applyDocument}>7</span>
+						<span data-document-index="7" onClick={applyDocument}>8</span>
+					</div>
 				</div>
 			</div>
 		</>
