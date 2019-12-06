@@ -16,7 +16,7 @@ export default function ModelEditor(props = {
 	const lastDOM = useRef(null);
 	const recordContext = useRef(null);
 	
-	const flushFunction = makeFlushFunction(commandStream);
+	const flushFunction = makeFlushFunction(commandStream, editable);
 
 	useEffect(() => {
 		const observer = new MutationObserver((mutations) => {
@@ -28,7 +28,7 @@ export default function ModelEditor(props = {
 			
 			console.log(
 				"testcase",
-				recordMutations(editable.current, mutations, placeholder.firstElementChild, recordContext.current)
+				JSON.stringify(recordMutations(editable.current, mutations, placeholder.firstElementChild, recordContext.current))
 			);
 			
 			recordContext.current = indexedDOM(editable.current);
@@ -45,7 +45,7 @@ export default function ModelEditor(props = {
 		observer.observe(editable.current, {
 			childList: true,
 			characterData: true,
-			attributes: false,
+			attributes: true,
 			subtree: true,
 			characterDataOldValue: true,
 		});
@@ -81,61 +81,6 @@ export default function ModelEditor(props = {
 	);
 }
 
-function findNode(nodeList, value) {
-	for (const node of nodeList) {
-		if (node === value) {
-			return node;
-		}
-	}
-
-	return undefined;
-}
-
-function isTargetDetachedBefore(mutation, nextMutations) {
-	const domNode = mutation.target;
-
-	if (domNode.parentNode !== null) {
-		return false;
-	}
-
-	for (const m of nextMutations) {
-		if (m.type === 'childList' && findNode(m.removedNodes, domNode) !== undefined) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-function nextCharacterData(domNode, nextMutations) {
-	for (const mutation of nextMutations) {
-		if (mutation.type === 'characterData' && mutation.target === domNode) {
-			return mutation;
-		}
-	}
-
-	return undefined;
-}
-
-function newNodeText(mutation, nextMutations) {
-	const domNode = mutation.target;
-	const nextMutation = nextCharacterData(domNode, nextMutations);
-	return nextMutation ? nextMutation.oldValue : domNode.textContent;
-}
-
-function getParentNode(node, mutations) {
-	for (const mutation of mutations) {
-		if (mutation.type === 'childList') {
-			const index = Array.from(mutation.removedNodes).indexOf(node);
-
-			if (index !== -1) {
-				return mutation.target;
-			}
-		}
-	}
-	return node.parentNode;
-}
-
 function hasTypeNodeValid(node) {
 	return node.typeNode === 'text' || node.typeNode === 'block' || node.typeNode === 'editor';
 }
@@ -159,18 +104,6 @@ function isLastNodeInBlock(node) {
 		currentNode = currentNode.parentNode;
 	}
 	return true;
-}
-
-function getNodeRacine(nextMutations, mutation, node = mutation.target) {
-	if (node.dataset && node.dataset.slateEditor === 'true') {
-		return node;
-	} else {
-		const parentNode = getParentNode(node, nextMutations);
-
-		if (parentNode) {
-			return getNodeRacine(nextMutations, mutation, parentNode);
-		}
-	}
 }
 
 function hasContentText(simulatedNode) {
@@ -246,7 +179,6 @@ function getPointForSimulatedNode(currentNode, initialOffset = 0) {
 	return {path, offset};
 }
 
-
 function getPointByOffset(node, searchOffset, anchor = true) {
 	let offset = 0;
 	const indexChild = [];
@@ -310,20 +242,17 @@ function getPointByOffset(node, searchOffset, anchor = true) {
 	}
 }
 
-
-function getRangeText(mutation, simulatedNodeSlateRacine, diff,) {
-	const currentNode = findSimulatedNodeRecursively(mutation.target, simulatedNodeSlateRacine);
-
-	if (hasTypeNodeValid(currentNode)) {
-		const pointAnchor = getPointByOffset(currentNode, diff.start, true);
-		const pointFocus = diff.start === diff.end ? pointAnchor : getPointByOffset(currentNode, diff.end, false);
+function getRangeText(simulatedNode, diff) {
+	if (hasTypeNodeValid(simulatedNode)) {
+		const pointAnchor = getPointByOffset(simulatedNode, diff.start, true);
+		const pointFocus = diff.start === diff.end ? pointAnchor : getPointByOffset(simulatedNode, diff.end, false);
 		return {
 			anchor: pointAnchor,
 			focus: pointFocus
 		};
 	} else {
-		const pointAnchor = getPointForSimulatedNode(currentNode, diff.start);
-		const pointFocus = diff.start === diff.end ? pointAnchor : getPointForSimulatedNode(currentNode, diff.end);
+		const pointAnchor = getPointForSimulatedNode(simulatedNode, diff.start);
+		const pointFocus = diff.start === diff.end ? pointAnchor : getPointForSimulatedNode(simulatedNode, diff.end);
 		return {
 			anchor: pointAnchor,
 			focus: pointFocus
@@ -331,9 +260,8 @@ function getRangeText(mutation, simulatedNodeSlateRacine, diff,) {
 	}
 }
 
-
-function getRangeAddedNode(node, previousSibling, simulatedNodeSlateRacine) {
-	const currentNode = findSimulatedNodeRecursively(node, simulatedNodeSlateRacine);
+function getRangeAddedNode(node, previousSibling, simulatedNodeSlateRoot) {
+	const currentNode = findSimulatedNodeRecursively(node, simulatedNodeSlateRoot);
 	let index = 0;
 	const offset = 0;
 	let point;
@@ -344,7 +272,7 @@ function getRangeAddedNode(node, previousSibling, simulatedNodeSlateRacine) {
 		let path;
 
 		if (previousSibling !== null) {
-			const previous = findSimulatedNodeRecursively(previousSibling, simulatedNodeSlateRacine);
+			const previous = findSimulatedNodeRecursively(previousSibling, simulatedNodeSlateRoot);
 
 			for (let i = 0; i < previous.parentNode.childNodes.length; i++) {
 				if (previous === previous.parentNode.childNodes[i]) {
@@ -367,8 +295,8 @@ function getRangeAddedNode(node, previousSibling, simulatedNodeSlateRacine) {
 	return {range, index};
 }
 
-function getRangeRemovedNode(node, simulatedNodeSlateRacine) {
-	const currentNode = findSimulatedNodeRecursively(node, simulatedNodeSlateRacine);
+function getRangeRemovedNode(node, simulatedNodeSlateRoot) {
+	const currentNode = findSimulatedNodeRecursively(node, simulatedNodeSlateRoot);
 	const offset = 0;
 	const path = getPathForSimulatedNode(currentNode);
 	const range = {
@@ -376,102 +304,6 @@ function getRangeRemovedNode(node, simulatedNodeSlateRacine) {
 		focus: {path, offset}
 	};
 	return range;
-}
-
-function processCharacterData(mutation, context) {
-	const nodeSlateRacine = getNodeRacine(context.nextMutations, mutation);
-	const simulatedNodeSlateRacineBefore = simulateDOMNodeBeforeMutations(nodeSlateRacine, [mutation].concat(context.nextMutations));
-	const simulatedNodeSlateRacineAfter = simulateDOMNodeBeforeMutations(nodeSlateRacine, context.nextMutations);
-	const simulatedTarget = findSimulatedNodeRecursively(mutation.target, simulatedNodeSlateRacineAfter);
-	const commands = [];
-
-	if (isTargetDetachedBefore(mutation, context.nextMutations)) {
-		return [];
-	}
-
-	const prevText = mutation.oldValue;
-	const nextText = simulatedTarget.textContent;
-
-	if (nextText === prevText) {
-		return commands;
-	}
-
-	const diff = diffText(prevText, nextText);
-	const range = getRangeText(mutation, simulatedNodeSlateRacineBefore, diff);
-
-	if (range !== null) {
-		if (diff.removeText.length > 0) {
-			commands.push({mutation, type: 'deleteAtRange', range, text: diff.removeText});
-		}
-
-		if (diff.insertText.length > 0) {
-			commands.push({mutation, type: 'insertTextAtRange', range, text: diff.insertText});
-		}
-	}
-	return commands;
-}
-
-function processChildListByDiff(mutation, context) {
-	const commands = [];
-	const nodeSlateRacine = getNodeRacine(context.nextMutations, mutation);
-	const simulatedNodeSlateRacineBefore = simulateDOMNodeBeforeMutations(nodeSlateRacine, [mutation].concat(context.nextMutations));
-	const simulatedNodePrev = findSimulatedNodeRecursively(mutation.target, simulatedNodeSlateRacineBefore);
-	const simulatedNodeSlateRacineAfter = simulateDOMNodeBeforeMutations(nodeSlateRacine, context.nextMutations);
-	const simulatedNodeNext = findSimulatedNodeRecursively(mutation.target, simulatedNodeSlateRacineAfter);
-
-	if (mutation.target.dataset.slateEditor === "true" && simulatedNodeNext.childNodes.length === 0) {
-		return ([{mutation, type: 'restoreEditor'}])
-	}
-
-	if (mutation.target.dataset.slateEditor === "true" || mutation.target.dataset.slateObject === "block") {
-		if (mutation.addedNodes.length === 1 && mutation.addedNodes[0].dataset && mutation.addedNodes[0].dataset.slateObject === 'block') {
-			const {range, index} = getRangeAddedNode(mutation.target, mutation.previousSibling, simulatedNodeSlateRacineBefore);
-			commands.push({mutation, type: 'insertNodeByKey', range, index, node: 'block'});
-		}
-	}
-
-	if (mutation.target.dataset.slateObject === "block") {
-		if (mutation.addedNodes.length === 1 && mutation.addedNodes[0].dataset && mutation.addedNodes[0].dataset.slateObject === 'text') {
-			const {range, index} = getRangeAddedNode(mutation.target, mutation.previousSibling, simulatedNodeSlateRacineBefore);
-			commands.push({mutation, type: 'insertNodeByKey', range, index, node: 'text'});
-		}
-	}
-
-	let prevText = getContentText(simulatedNodePrev);
-	let nextText = getContentText(simulatedNodeNext);
-
-	prevText = deleteNewLine(simulatedNodePrev, prevText);
-	nextText = deleteNewLine(simulatedNodeNext, nextText);
-
-	if (prevText !== nextText) {
-		const diff = diffText(prevText, nextText);
-		const range = getRangeText(mutation, simulatedNodeSlateRacineBefore, diff);
-
-		if (diff !== null && diff.removeText.length > 0) {
-			commands.push({mutation, type: 'deleteAtRange', range, text: diff.removeText});
-		}
-
-		if (diff !== null && diff.insertText.length > 0) {
-			commands.push({mutation, type: 'insertTextAtRange', range, text: diff.insertText});
-		}
-	}
-
-	if (mutation.target.dataset.slateObject === "block") {
-		if (mutation.removedNodes.length === 1 && mutation.removedNodes[0].dataset && mutation.removedNodes[0].dataset.slateObject === 'text') {
-			if (mutation.addedNodes.length > 0 || mutation.nextSibling !== null || mutation.previousSibling !== null) {
-				const range = getRangeRemovedNode(mutation.removedNodes[0], simulatedNodeSlateRacineBefore);
-				commands.push({mutation, type: 'removeNodeByKey', range});
-			}
-		}
-	}
-
-	if (mutation.target.dataset.slateEditor === "true" || mutation.target.dataset.slateObject === "block") {
-		if (mutation.removedNodes.length === 1 && mutation.removedNodes[0].dataset && mutation.removedNodes[0].dataset.slateObject === 'block') {
-			const range = getRangeRemovedNode(mutation.removedNodes[0], simulatedNodeSlateRacineBefore);
-			commands.push({mutation, type: 'removeNodeByKey', range});
-		}
-	}
-	return commands;
 }
 
 function getPathForNode(node) {
@@ -510,7 +342,98 @@ function getPointForNode(currentNode, initialOffset = 0) {
 	return {path, offset};
 }
 
+function processCharacterData(mutation, context) {
+	const commands = [];
 
+	if (context.simulatedTargetBefore.parentNode === null) {
+		return [];
+	}
+
+	const prevText = context.simulatedTargetBefore.textContent;
+	const nextText = context.simulatedTargetAfter.textContent;
+
+	if (nextText === prevText) {
+		return commands;
+	}
+
+	const diff = diffText(prevText, nextText);
+	const range = getRangeText(context.simulatedTargetBefore, diff);
+
+	if (range !== null) {
+		if (diff.removeText.length > 0) {
+			commands.push({mutation, type: 'deleteAtRange', range, text: diff.removeText});
+		}
+
+		if (diff.insertText.length > 0) {
+			commands.push({mutation, type: 'insertTextAtRange', range, text: diff.insertText});
+		}
+	}
+	return commands;
+}
+
+function processChildList(mutation, context) {
+	const commands = [];
+	
+	const {
+		simulatedNodeSlateRootBefore,
+		simulatedTargetBefore,
+		simulatedTargetAfter,
+	} = context;
+	
+	if (mutation.target.dataset.slateEditor === "true" && simulatedTargetAfter.childNodes.length === 0) {
+		return ([{mutation, type: 'restoreEditor'}])
+	}
+
+	if (mutation.target.dataset.slateEditor === "true" || mutation.target.dataset.slateObject === "block") {
+		if (mutation.addedNodes.length === 1 && mutation.addedNodes[0].dataset && mutation.addedNodes[0].dataset.slateObject === 'block') {
+			const {range, index} = getRangeAddedNode(mutation.target, mutation.previousSibling, simulatedNodeSlateRootBefore);
+			commands.push({mutation, type: 'insertNodeByKey', range, index, node: 'block'});
+		}
+	}
+
+	if (mutation.target.dataset.slateObject === "block") {
+		if (mutation.addedNodes.length === 1 && mutation.addedNodes[0].dataset && mutation.addedNodes[0].dataset.slateObject === 'text') {
+			const {range, index} = getRangeAddedNode(mutation.target, mutation.previousSibling, simulatedNodeSlateRootBefore);
+			commands.push({mutation, type: 'insertNodeByKey', range, index, node: 'text'});
+		}
+	}
+
+	let prevText = getContentText(simulatedTargetBefore);
+	let nextText = getContentText(simulatedTargetAfter);
+
+	prevText = deleteNewLine(simulatedTargetBefore, prevText);
+	nextText = deleteNewLine(simulatedTargetAfter, nextText);
+
+	if (prevText !== nextText) {
+		const diff = diffText(prevText, nextText);
+		const range = getRangeText(context.simulatedTargetBefore, diff);
+
+		if (diff !== null && diff.removeText.length > 0) {
+			commands.push({mutation, type: 'deleteAtRange', range, text: diff.removeText});
+		}
+
+		if (diff !== null && diff.insertText.length > 0) {
+			commands.push({mutation, type: 'insertTextAtRange', range, text: diff.insertText});
+		}
+	}
+
+	if (mutation.target.dataset.slateObject === "block") {
+		if (mutation.removedNodes.length === 1 && mutation.removedNodes[0].dataset && mutation.removedNodes[0].dataset.slateObject === 'text') {
+			if (mutation.addedNodes.length > 0 || mutation.nextSibling !== null || mutation.previousSibling !== null) {
+				const range = getRangeRemovedNode(mutation.removedNodes[0], simulatedNodeSlateRootBefore);
+				commands.push({mutation, type: 'removeNodeByKey', range});
+			}
+		}
+	}
+
+	if (mutation.target.dataset.slateEditor === "true" || mutation.target.dataset.slateObject === "block") {
+		if (mutation.removedNodes.length === 1 && mutation.removedNodes[0].dataset && mutation.removedNodes[0].dataset.slateObject === 'block') {
+			const range = getRangeRemovedNode(mutation.removedNodes[0], simulatedNodeSlateRootBefore);
+			commands.push({mutation, type: 'removeNodeByKey', range});
+		}
+	}
+	return commands;
+}
 
 function processSelect() {
 	const domSelection = window.getSelection();
@@ -528,21 +451,28 @@ function processSelect() {
 	}
 }
 
-export function makeFlushFunction(commandStream) {
+export function makeFlushFunction(commandStream, editorRef) {
 	const flushAction = (mutations) => {
 		const commands = [];
 
 		mutations.forEach((mutation, index) => {
+			// For debugging purposes
 			mutation.idx = index;
+			
+			const simulatedNodeSlateRootBefore = simulateDOMNodeBeforeMutations(editorRef.current, mutations.slice(index));
+			const simulatedNodeSlateRootAfter = simulateDOMNodeBeforeMutations(editorRef.current, mutations.slice(index + 1));
+
 			const context = {
-				previousMutations: mutations.slice(0, index),
-				nextMutations: mutations.slice(index + 1),
+				simulatedNodeSlateRootBefore,
+				simulatedNodeSlateRootAfter,
+				simulatedTargetBefore: findSimulatedNodeRecursively(mutation.target, simulatedNodeSlateRootBefore),
+				simulatedTargetAfter: findSimulatedNodeRecursively(mutation.target, simulatedNodeSlateRootAfter)
 			};
 
 			if (mutation.type === 'characterData') {
 				commands.push(...processCharacterData(mutation, context));
 			} else if (mutation.type === 'childList') {
-				commands.push(...processChildListByDiff(mutation, context));
+				commands.push(...processChildList(mutation, context));
 			}
 		});
 
