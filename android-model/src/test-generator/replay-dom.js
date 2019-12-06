@@ -139,14 +139,14 @@ function recordMutationOperations(node, mutations, context) {
 	const operations = [];
 	
 	mutations.forEach((mutation, mutationIndex) => {
-		const state = simulateDOMNodeBeforeMutations(node, mutations.slice(mutationIndex + 1));
+		const stateAfter = simulateDOMNodeBeforeMutations(node, mutations.slice(mutationIndex + 1));
 
 		if (mutation.type === 'characterData') {
-			const simulated = findSimulatedNodeRecursively(mutation.target, state);
+			const simulated = findSimulatedNodeRecursively(mutation.target, stateAfter);
 			operations.push({type: 'setTextContent', data: {node: index.get(mutation.target), value: getTrueContentText(simulated)}});
 		} else if (mutation.type === 'childList') {
 			for (const added of mutation.addedNodes) {
-				const simulated = findSimulatedNodeRecursively(added, state);
+				const simulated = findSimulatedNodeRecursively(added, stateAfter);
 				const parent = index.get(simulated.parentNode.realNode)
 				const atIndex = simulated.parentNode.childNodes.findIndex(n => n === simulated);
 				
@@ -191,9 +191,9 @@ function serializeMutations(node, mutations) {
 				addedNodes: [],
 				attributName: null,
 				attributNamespace: null,
-				nextSibling: state.nextSibling ? index.get(state.nextSibling.realNode) : null,
-				oldValue: getTrueContentText(state),
-				previousSibling: state.previousSibling ? index.get(state.previousSibling.realNode) : null,
+				nextSibling: stateBefore.nextSibling ? index.get(stateBefore.nextSibling.realNode) : null,
+				oldValue: getTrueContentText(stateBefore),
+				previousSibling: state.previousSibling ? index.get(stateBefore.previousSibling.realNode) : null,
 				removedNodes: [],
 				target: index.get(mutation.target),
 				type: 'characterData'
