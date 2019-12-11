@@ -10,7 +10,7 @@ Right now, there are two editors in the page: A native, vanilla content editable
 
 ## Health
 
-We do not intend to spend efforts on the model any further for the moment.
+We will continue developping the issue for a while, but the future is still uncertain.
 
 ## How It Works
 
