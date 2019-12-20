@@ -1,0 +1,49 @@
+{
+  "name": "slate-new-android-model-prototype-beforeinput",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@babel/preset-env": "^7.7.4",
+    "@babel/register": "^7.7.4",
+    "druide-slate-react": "0.22.9-rc.5",
+    "immutable": "^4.0.0-rc.12",
+    "jsdom": "^15.2.1",
+    "module-alias": "^2.2.0",
+    "react": "16.10.2",
+    "react-dom": "16.10.2",
+    "react-scripts": "^3.0.1",
+    "slate": "0.47.8",
+    "slate-dev-environment": "^0.2.2",
+    "typescript": "^3.5.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "mocha --require @babel/register --recursive 'test/**/*.test.js'",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "_moduleAliases": {
+    "slate-react": "druide-slate-react"
+  },
+  "devDependencies": {
+    "babel-plugin-module-resolver": "^3.2.0",
+    "eslint": "^6.6.0",
+    "mocha": "^6.2.2",
+    "expect": "^24.9.0",
+    "babel-eslint": "^10.0.3",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-prettier": "^2.5.0",
+    "eslint-plugin-react": "^7.6.0",
+    "prettier": "^1.10.2"
+  }
+}
