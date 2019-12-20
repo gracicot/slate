@@ -1,7 +1,7 @@
 import Debug from 'debug'
 import getWindow from 'get-window'
 import ReactDOM from 'react-dom'
-import diffText from './diff-text'
+import diffText from '../../utils/diff-text'
 
 /**
  * @type {Debug}

@@ -1,5 +1,7 @@
 import getWindow from 'get-window'
-import CompositionManager from './composition-manager'
+
+// import CompositionManager from './composition-manager'
+import MutationManager from './mutation-manager'
 
 /**
  * Fixes a selection within the DOM when the cursor is in Slate's special
@@ -38,7 +40,7 @@ function fixSelectionInZeroWidthBlock(window) {
  */
 
 function AndroidPlugin({ editor }) {
-  const observer = new CompositionManager(editor)
+  const observer = new MutationManager(editor)
 
   /**
    * handle `onCompositionStart`
@@ -75,7 +77,7 @@ function AndroidPlugin({ editor }) {
    * handle `onComponentDidMount`
    */
 
-  function onComponentDidMount(event, e, next) {
+  function onComponentDidMount(a, e, next) {
     observer.connect()
     return next()
   }
@@ -84,7 +86,7 @@ function AndroidPlugin({ editor }) {
    * handle `onComponentDidUpdate`
    */
 
-  function onComponentDidUpdate(event, e, next) {
+  function onComponentDidUpdate(a, e, next) {
     observer.connect()
     return next()
   }
@@ -95,7 +97,7 @@ function AndroidPlugin({ editor }) {
    * @param {Event} event
    */
 
-  function onComponentWillUnmount(event, e, next) {
+  function onComponentWillUnmount(a, e, next) {
     observer.disconnect()
     return next()
   }
@@ -106,7 +108,7 @@ function AndroidPlugin({ editor }) {
    * @param {Event} event
    */
 
-  function onRender(event, e, next) {
+  function onRender(a, e, next) {
     observer.disconnect()
 
     // We don't want the `diff` from a previous render to apply to a
@@ -116,16 +118,29 @@ function AndroidPlugin({ editor }) {
   }
 
   return {
+    onBeforeInput: event => {
+      switch (event.inputType) {
+        case 'insertLineBreak':
+        case 'insertParagraph': {
+          event.preventDefault()
+          editor.splitBlock()
+        }
+
+        default:
+          break
+      }
+    },
     onComponentDidMount,
     onComponentDidUpdate,
     onComponentWillUnmount,
     onCompositionEnd,
     onCompositionStart,
+    onInput: () => {},
+    onKeyDown: () => {},
+    onKeyUp: () => {},
+    onKeyPress: () => {},
     onRender,
     onSelect,
-    queries: {
-      hasPendingCompositionDiff: () => observer.hasPendingCompositionDiff(),
-    },
   }
 }
 
